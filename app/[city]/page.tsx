@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { dresden } from "./json";
 
 const TOKEN = "52UCMESB68L6K8R7T47QTU4JD";
@@ -15,46 +16,64 @@ export async function getData(location: string) {
   }
   return res.json();
 }
-//ASYNC
-function wheaterData(location: string) {
-  const data = dresden();
-  //const data = await getData(location)
-  console.log(data);
 
-  const wheaterData = {
+async function returnData(location: string) {
+  //const res = await getData(location);
+  const res = dresden();
+  
+  const wheater: WeatherData = {
     info: {
-      resolvedAddress: data.resolvedAddress,
-      timezone: data.timezone,
-      datetime: data.currentConditions.datetime,
-      description: data.description,
+      resolvedAddress: res.resolvedAddress,
+      timezone: res.timezone,
+      datetime: res.currentConditions.datetime,
+      description: res.description,
     },
     current: {
-      windspeed: data.currentConditions.windspeed,
-      temp: data.currentConditions.temp,
-      sunrise: data.currentConditions.sunrise,
-      sunset: data.currentConditions.sunset,
-      humidity: data.currentConditions.humidity,
-      cloudcover: data.currentConditions.cloudcover,
+      temp: res.currentConditions.temp,
+      precip: res.currentConditions.precip,
+      windspeed: res.currentConditions.windspeed,
+      sunrise: res.currentConditions.sunrise,
+      sunset: res.currentConditions.sunset,
+      humidity: res.currentConditions.humidity,
+      cloudcover: res.currentConditions.cloudcover,
     },
   };
-  return wheaterData;
+
+  return wheater;
 }
 
 export default function Page({ params }: { params: { city: string } }) {
-  const data = wheaterData(params.city);
-  console.log("awda: ", data);
+  const [wheaterData, setWheaterData] = useState<WeatherData>();
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const data = await returnData(params.city);
+        setWheaterData(data);
+      } catch (error) {
+        console.error("Error fetching weather data", error);
+      }
+    }
+    fetchData();
+  }, [params.city]);
+
+  if (!wheaterData) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <>
+    <div className="ml-10 mt-10">
       <div className="font-extrabold text-lg">Info:</div>
-      <div>Location: {data.info.resolvedAddress}</div>
-      <div>Timezone: {data.info.timezone}</div>
-      <div>Date Time: {data.info.datetime}</div>
-      <div>My Post: {params.city}</div>
-      <div>My Post: {params.city}</div>
-      <div>My Post: {params.city}</div>
-      <div>My Post: {params.city}</div>
-      <div>My Post: {params.city}</div>
-    </>
+      <div>Location: {wheaterData.info.resolvedAddress}</div>
+      <div>Timezone: {wheaterData.info.timezone}</div>
+      <div>Date Time: {wheaterData.info.datetime}</div>
+      <div>Descripton: {wheaterData.info.description}</div>
+
+      <div className="font-extrabold text-lg mt-3">Current Wheater:</div>
+      <div>Temp: {wheaterData.current.temp}</div>
+      <div>Rain: {wheaterData.current.precip}</div>
+      <div>Cloud Cover: {wheaterData.current.cloudcover}</div>
+      <div>Humidity: {wheaterData.current.humidity}</div>
+    </div>
   );
 }
