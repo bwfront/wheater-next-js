@@ -7,33 +7,32 @@ import { balo } from "../fonts";
 const TOKEN = "52UCMESB68L6K8R7T47QTU4JD";
 
 export default function Page({ params }: { params: { city: string } }) {
-    const [wheaterData, setWheaterData] = useState<WeatherData>();
-  
-    useEffect(() => {
-      async function fetchData() {
-        try {
-          const data = await returnData(params.city);
-          setWheaterData(data);
-        } catch (error) {
-          console.error("Error fetching weather data", error);
-        }
+  const [wheaterData, setWheaterData] = useState<WeatherData>();
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const data = await returnData(params.city);
+        setWheaterData(data);
+      } catch (error) {
+        console.error("Error fetching weather data", error);
       }
-      fetchData();
-    }, [params.city]);
-  
-    if (!wheaterData) {
-      return <div>Loading...</div>;
     }
-  
-    return (
-      <div className="m-7 flex flex-col gap-5">
-        <WheaterInfoTop wheaterData={wheaterData} />
-        <CurrentWeather wheaterData={wheaterData} />
-  
-        <FutureWheater wheaterData={wheaterData} />
-      </div>
-    );
+    fetchData();
+  }, [params.city]);
+
+  if (!wheaterData) {
+    return <div>Loading...</div>;
   }
+
+  return (
+    <div className="m-7 flex flex-col gap-5">
+      <WheaterInfoTop wheaterData={wheaterData} />
+      <CurrentWeather wheaterData={wheaterData} />
+      <FutureWheater wheaterData={wheaterData} />
+    </div>
+  );
+}
 
 export async function getData(location: string) {
   console.log("API Req.");
@@ -123,14 +122,28 @@ function cloudCoverReturn(cloudCoverPerc: number, rainPerc: number) {
   if (cloudCoverPerc <= 10) {
     return "☀️ Clear";
   } else if (cloudCoverPerc <= 30) {
-    return "🌤️ Mostly Sunny";
+    return "🌤️ Sunny"; //Mostly
   } else if (cloudCoverPerc <= 50) {
-    return "⛅ Partly Cloudy";
+    return "⛅ Cloudy";  //Partly
   } else if (cloudCoverPerc <= 70) {
-    return "🌥️  Mostly Cloudy";
+    return "🌥️  Cloudy"; //Mostly
   } else if (cloudCoverPerc <= 100) {
     return "☁️ Cloudy";
   }
+}
+
+function timeEpochToDayReturn(timeEpoch: number) {
+  const days = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+  const date = new Date(timeEpoch * 1000);
+  return days[date.getDay()];
 }
 
 function WheaterInfoTop({ wheaterData }: { wheaterData: WeatherData }) {
@@ -158,7 +171,7 @@ function CurrentWeather({ wheaterData }: { wheaterData: WeatherData }) {
           {wheaterData.current.temp} <div className="text-5xl">°</div>
         </div>
       </div>
-      <div className="bg-blue-100 p-10 rounded-2xl flex-shrink-0 grow flex justify-center uppercase font-bold">
+      <div className="bg-blue-100 p-10 rounded-2xl flex-shrink-0 grow flex justify-center uppercase font-bold basis-0">
         <div className="text-6xl flex items-start">
           {cloudCoverReturn(
             wheaterData.current.cloudcover,
@@ -171,7 +184,7 @@ function CurrentWeather({ wheaterData }: { wheaterData: WeatherData }) {
           🌧️ {wheaterData.current.precip}%
         </div>
       </div>
-      <div className="bg-blue-100 p-10 rounded-2xl flex-shrink-0 grow flex justify-center font-bold">
+      <div className="bg-blue-100 p-10 rounded-2xl flex-shrink-0 grow flex justify-center font-bold basis-0">
         <div className="text-6xl flex items-start">
           💨 {wheaterData.current.windgust} kp/h
         </div>
@@ -190,19 +203,24 @@ function FutureWheater({ wheaterData }: { wheaterData: WeatherData }) {
     return <div>Loading...</div>;
   }
   return (
-    <div className="flex gap-5">
+    <div className="flex gap-5 flex-wrap">
       {Object.keys(wheaterData.futureDays).map((dayKey: string) => {
         const day = wheaterData.futureDays[dayKey];
         return (
           <div
             key={dayKey}
-            className="bg-blue-100 p-10 rounded-2xl flex grow font-bold"
+            className="bg-blue-100 p-5 pb-6 rounded-2xl flex grow font-bold flex-col items-center basis-0"
           >
-            <div>Temperature: {day.temp}°</div>
+            <div className="text-base font-medium text-gray-800">
+              {timeEpochToDayReturn(day.timeEpoch)}
+            </div>
+            <div className="flex mt-4 gap-5">
+              <div className="text-4xl">{day.tempmin}° / {day.tempmax}°</div>
+              <div className="text-4xl"> {(cloudCoverReturn(day.cloudcover, day.precip))?.slice(0, 2)}</div>
+            </div>
           </div>
         );
       })}
     </div>
   );
 }
-
