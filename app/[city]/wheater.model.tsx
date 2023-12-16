@@ -13,6 +13,7 @@ interface WeatherInfo {
     sunset: string;
     humidity: number;
     cloudcover: number;
+    moonphase: number;
   }
   
   interface WeatherData {
