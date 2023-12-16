@@ -8,7 +8,7 @@ interface WeatherInfo {
   interface CurrentWeather {
     temp: number;
     precip: number;
-    windspeed: number;
+    windgust: number;
     sunrise: string;
     sunset: string;
     humidity: number;
@@ -19,4 +19,20 @@ interface WeatherInfo {
   interface WeatherData {
     info: WeatherInfo;
     current: CurrentWeather;
+    futureDays: FutureDays;
+  }
+
+  interface FutureDays {
+    [key: string]: FutDay;
+  }
+
+  interface FutDay{
+    id: number;
+    timeEpoch: number;
+    description: string;
+    temp: number;
+    tempmax: number;
+    tempmin: number;
+    precip: number;
+    cloudcover: number;
   }

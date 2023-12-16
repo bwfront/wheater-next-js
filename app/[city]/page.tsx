@@ -6,6 +6,35 @@ import { balo } from "../fonts";
 
 const TOKEN = "52UCMESB68L6K8R7T47QTU4JD";
 
+export default function Page({ params }: { params: { city: string } }) {
+    const [wheaterData, setWheaterData] = useState<WeatherData>();
+  
+    useEffect(() => {
+      async function fetchData() {
+        try {
+          const data = await returnData(params.city);
+          setWheaterData(data);
+        } catch (error) {
+          console.error("Error fetching weather data", error);
+        }
+      }
+      fetchData();
+    }, [params.city]);
+  
+    if (!wheaterData) {
+      return <div>Loading...</div>;
+    }
+  
+    return (
+      <div className="m-7 flex flex-col gap-5">
+        <WheaterInfoTop wheaterData={wheaterData} />
+        <CurrentWeather wheaterData={wheaterData} />
+  
+        <FutureWheater wheaterData={wheaterData} />
+      </div>
+    );
+  }
+
 export async function getData(location: string) {
   console.log("API Req.");
 
@@ -22,6 +51,20 @@ async function returnData(location: string) {
   //const res = await getData(location);
   const res = dresden();
   console.log(res);
+  let futureDays: any = {};
+
+  for (let i = 1; i <= 6; i++) {
+    futureDays[`day${i}`] = {
+      timeEpoch: res.days[i].datetimeEpoch,
+      description: res.days[i].description,
+      temp: calcFtoC(res.days[i].temp),
+      tempmax: calcFtoC(res.days[i].tempmax),
+      tempmin: calcFtoC(res.days[i].tempmin),
+      precip: res.days[i].precip,
+      cloudcover: res.days[i].cloudcover,
+      id: i,
+    };
+  }
 
   const wheater: WeatherData = {
     info: {
@@ -31,90 +74,24 @@ async function returnData(location: string) {
       description: res.description,
     },
     current: {
-      temp: ((res.currentConditions.temp - 32) * 5) / 9,
+      temp: calcFtoC(res.currentConditions.temp),
       precip: res.currentConditions.precip,
-      windspeed: res.currentConditions.windspeed,
+      windgust: res.currentConditions.windgust,
       sunrise: res.currentConditions.sunrise,
       sunset: res.currentConditions.sunset,
       humidity: res.currentConditions.humidity,
       cloudcover: res.currentConditions.cloudcover,
       moonphase: res.currentConditions.moonphase,
     },
+    futureDays: futureDays,
   };
+  console.log(wheater);
 
   return wheater;
 }
 
-export default function Page({ params }: { params: { city: string } }) {
-  const [wheaterData, setWheaterData] = useState<WeatherData>();
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const data = await returnData(params.city);
-        setWheaterData(data);
-      } catch (error) {
-        console.error("Error fetching weather data", error);
-      }
-    }
-    fetchData();
-  }, [params.city]);
-
-  if (!wheaterData) {
-    return <div>Loading...</div>;
-  }
-
-  return (
-    <div className="m-7 flex flex-col gap-5">
-      <div className="bg-blue-100 p-10 rounded-2xl">
-        <div
-          className={`${balo.className} text-5xl font-extrabold text-blue-800 mb-5`}
-        >
-          <div className="text-base font-medium text-gray-800">
-            Status: {wheaterData.info.timezone}{" "}
-            {wheaterData.info.datetime.slice(0, 5)} Uhr
-          </div>
-          {wheaterData.info.resolvedAddress}
-        </div>
-        <div className="text-lg">{wheaterData.info.description}</div>
-      </div>
-      <div className="flex gap-5 grow">
-        <div className="bg-blue-100 p-10 rounded-2xl flex font-bold">
-          <div className="text-6xl flex items-start">
-            {Math.round(wheaterData.current.temp)}{" "}
-            <div className="text-5xl">°</div>
-          </div>
-        </div>
-        <div className="bg-blue-100 p-10 rounded-2xl grow flex justify-center uppercase font-bold">
-          {/*Cloud Cover */}
-          <div className="text-6xl flex items-start">
-            {cloudCoverReturn(
-              wheaterData.current.cloudcover,
-              wheaterData.current.precip
-            )}
-          </div>
-        </div>
-        <div className="bg-blue-100 p-10 rounded-2xl grow flex justify-center font-bold">
-          {/*Rain */}
-          <div className="text-6xl flex items-start">
-            🌧️ {wheaterData.current.precip}%
-          </div>
-        </div>
-        <div className="bg-blue-100 p-10 rounded-2xl grow flex justify-center font-bold">
-          {/*Wind */}
-          <div className="text-6xl flex items-start">
-            {wheaterData.current.windspeed}
-          </div>
-        </div>
-        <div className="bg-blue-100 p-10 rounded-2xl flex font-bold">
-          {/*MoonPhase */}
-          <div className="text-6xl flex items-start">
-            {moonPhaseReturn(wheaterData.current.moonphase)}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+function calcFtoC(temp: number) {
+  return Math.round(((temp - 32) * 5) / 9);
 }
 
 function moonPhaseReturn(moonphase: number) {
@@ -155,3 +132,77 @@ function cloudCoverReturn(cloudCoverPerc: number, rainPerc: number) {
     return "☁️ Cloudy";
   }
 }
+
+function WheaterInfoTop({ wheaterData }: { wheaterData: WeatherData }) {
+  return (
+    <div className="bg-blue-100 p-10 rounded-2xl">
+      <div
+        className={`${balo.className} text-5xl font-extrabold text-blue-800 mb-5`}
+      >
+        <div className="text-base font-medium text-gray-800">
+          Status: {wheaterData.info.timezone}{" "}
+          {wheaterData.info.datetime.slice(0, 5)} Uhr
+        </div>
+        {wheaterData.info.resolvedAddress}
+      </div>
+      <div className="text-lg">{wheaterData.info.description}</div>
+    </div>
+  );
+}
+
+function CurrentWeather({ wheaterData }: { wheaterData: WeatherData }) {
+  return (
+    <div className="flex gap-5 grow flex-wrap">
+      <div className="bg-blue-100 p-10 rounded-2xl flex font-bold">
+        <div className="text-6xl flex items-start">
+          {wheaterData.current.temp} <div className="text-5xl">°</div>
+        </div>
+      </div>
+      <div className="bg-blue-100 p-10 rounded-2xl flex-shrink-0 grow flex justify-center uppercase font-bold">
+        <div className="text-6xl flex items-start">
+          {cloudCoverReturn(
+            wheaterData.current.cloudcover,
+            wheaterData.current.precip
+          )}
+        </div>
+      </div>
+      <div className="bg-blue-100 p-10 rounded-2xl flex flex-shrink-0 justify-center font-bold">
+        <div className="text-6xl flex items-start">
+          🌧️ {wheaterData.current.precip}%
+        </div>
+      </div>
+      <div className="bg-blue-100 p-10 rounded-2xl flex-shrink-0 grow flex justify-center font-bold">
+        <div className="text-6xl flex items-start">
+          💨 {wheaterData.current.windgust} kp/h
+        </div>
+      </div>
+      <div className="bg-blue-100 p-10 rounded-2xl flex font-bold">
+        <div className="text-6xl flex items-start">
+          {moonPhaseReturn(wheaterData.current.moonphase)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FutureWheater({ wheaterData }: { wheaterData: WeatherData }) {
+  if (!wheaterData || !wheaterData.futureDays) {
+    return <div>Loading...</div>;
+  }
+  return (
+    <div className="flex gap-5">
+      {Object.keys(wheaterData.futureDays).map((dayKey: string) => {
+        const day = wheaterData.futureDays[dayKey];
+        return (
+          <div
+            key={dayKey}
+            className="bg-blue-100 p-10 rounded-2xl flex grow font-bold"
+          >
+            <div>Temperature: {day.temp}°</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
