@@ -15,8 +15,8 @@ export function NavigationBar() {
 
   return (
     <div className="top-0 pl-10 pr-10 bg-blue-100 w-full h-16 shadow-md flex justify-between items-center">
-      <div className={`${balo.className} font-extrabold text-3xl antialiased text-blue-800 uppercase select-none`}>
-        Next-Wheater
+      <div className={`${balo.className} font-extrabold sm:text-2xl lg:text-3xl antialiased text-blue-800 uppercase select-none`}>
+        Next<div className="sm:inline-flex hidden">-Wheater</div>
       </div>
       <div className="flex gap-2">
         <input

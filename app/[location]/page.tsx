@@ -1,28 +1,36 @@
 "use client";
-
-import { useEffect, useState } from "react";
-import { dresden } from "./json";
 import { balo } from "../fonts";
+
 
 const TOKEN = "52UCMESB68L6K8R7T47QTU4JD";
 
-export default function Page({ params }: { params: { city: string } }) {
-  const [wheaterData, setWheaterData] = useState<WeatherData>();
+async function getWheaterData(location: string) {
+  console.log(location);
+  
+  const res = await fetch(
+    `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${location}?unitGroup=metric&key=${TOKEN}`
+  );
+  return res.json();
+}
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const data = await returnData(params.city);
-        setWheaterData(data);
-      } catch (error) {
-        console.error("Error fetching weather data", error);
-      }
-    }
-    fetchData();
-  }, [params.city]);
+
+export default async function Page(params: any) {
+  let wheaterData: WeatherData | null = null;
+  const wheaterRes = getWheaterData(params.params.location);
+  const wheaterDataRes = await Promise.all([wheaterRes]).then((res) => {
+    wheaterData  = returnData(res[0]);
+
+  }); 
 
   if (!wheaterData) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex justify-center flex-col items-center h-screen gap-5">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-r-2 border-gray-300"></div>
+        <p className="text-gray-600 ml-4 text-2xl font-medium animate-pulse">
+          Loading...
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -34,22 +42,7 @@ export default function Page({ params }: { params: { city: string } }) {
   );
 }
 
-export async function getData(location: string) {
-  console.log("API Req.");
-
-  const res = await fetch(
-    `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${location}/?key=${TOKEN}`
-  );
-  if (!res.ok) {
-    throw new Error("Failed to fetch data");
-  }
-  return res.json();
-}
-
-async function returnData(location: string) {
-  //const res = await getData(location);
-  const res = dresden();
-  console.log(res);
+function returnData(res: any) {
   let futureDays: any = {};
 
   for (let i = 1; i <= 6; i++) {
@@ -90,6 +83,7 @@ async function returnData(location: string) {
 }
 
 function calcFtoC(temp: number) {
+  return temp;
   return Math.round(((temp - 32) * 5) / 9);
 }
 
@@ -124,7 +118,7 @@ function cloudCoverReturn(cloudCoverPerc: number, rainPerc: number) {
   } else if (cloudCoverPerc <= 30) {
     return "🌤️ Sunny"; //Mostly
   } else if (cloudCoverPerc <= 50) {
-    return "⛅ Cloudy";  //Partly
+    return "⛅ Cloudy"; //Partly
   } else if (cloudCoverPerc <= 70) {
     return "🌥️  Cloudy"; //Mostly
   } else if (cloudCoverPerc <= 100) {
@@ -150,28 +144,30 @@ function WheaterInfoTop({ wheaterData }: { wheaterData: WeatherData }) {
   return (
     <div className="bg-blue-100 p-10 rounded-2xl">
       <div
-        className={`${balo.className} text-5xl font-extrabold text-blue-800 mb-5`}
+        className={`${balo.className} text-2xl  sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-blue-800 mb-5`}
       >
-        <div className="text-base font-medium text-gray-800">
+        <div className="text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl font-medium text-gray-800">
           Status: {wheaterData.info.timezone}{" "}
           {wheaterData.info.datetime.slice(0, 5)} Uhr
         </div>
         {wheaterData.info.resolvedAddress}
       </div>
-      <div className="text-lg">{wheaterData.info.description}</div>
+      <div className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl">
+        {wheaterData.info.description}
+      </div>
     </div>
   );
 }
 
 function CurrentWeather({ wheaterData }: { wheaterData: WeatherData }) {
   return (
-    <div className="flex gap-5 grow flex-wrap">
-      <div className="bg-blue-100 p-10 rounded-2xl flex font-bold">
+    <div className="flex gap-5 grow flex-wrap select-none">
+      <div className="bg-blue-100 p-10 rounded-2xl flex font-bold hover:scale-105 transition-transform shadow-md">
         <div className="text-6xl flex items-start">
           {wheaterData.current.temp} <div className="text-5xl">°</div>
         </div>
       </div>
-      <div className="bg-blue-100 p-10 rounded-2xl flex-shrink-0 grow flex justify-center uppercase font-bold basis-0">
+      <div className="bg-blue-100 p-10 rounded-2xl whitespace-nowrap flex-shrink-0 grow flex justify-center uppercase font-bold basis-0 hover:scale-105 transition-transform shadow-md">
         <div className="text-6xl flex items-start">
           {cloudCoverReturn(
             wheaterData.current.cloudcover,
@@ -179,17 +175,17 @@ function CurrentWeather({ wheaterData }: { wheaterData: WeatherData }) {
           )}
         </div>
       </div>
-      <div className="bg-blue-100 p-10 rounded-2xl flex flex-shrink-0 justify-center font-bold">
+      <div className="bg-blue-100 p-10 whitespace-nowrap rounded-2xl flex flex-shrink-0 justify-center font-bold hover:scale-105 transition-transform shadow-md">
         <div className="text-6xl flex items-start">
           🌧️ {wheaterData.current.precip}%
         </div>
       </div>
-      <div className="bg-blue-100 p-10 rounded-2xl flex-shrink-0 grow flex justify-center font-bold basis-0">
+      <div className="bg-blue-100 p-10 whitespace-nowrap rounded-2xl flex-shrink-0 grow flex justify-center font-bold basis-0 hover:scale-105 transition-transform shadow-md">
         <div className="text-6xl flex items-start">
           💨 {wheaterData.current.windgust} kp/h
         </div>
       </div>
-      <div className="bg-blue-100 p-10 rounded-2xl flex font-bold">
+      <div className="bg-blue-100 p-10 rounded-2xl flex font-bold hover:scale-105 transition-transform shadow-md">
         <div className="text-6xl flex items-start">
           {moonPhaseReturn(wheaterData.current.moonphase)}
         </div>
@@ -203,20 +199,25 @@ function FutureWheater({ wheaterData }: { wheaterData: WeatherData }) {
     return <div>Loading...</div>;
   }
   return (
-    <div className="flex gap-5 flex-wrap">
+    <div className="flex gap-5 flex-wrap ">
       {Object.keys(wheaterData.futureDays).map((dayKey: string) => {
         const day = wheaterData.futureDays[dayKey];
         return (
           <div
             key={dayKey}
-            className="bg-blue-100 p-5 pb-6 rounded-2xl flex grow font-bold flex-col items-center basis-0"
+            className="bg-blue-100 p-5 pb-6 rounded-2xl flex grow font-bold flex-col flex-wrap items-center basis-0 flex-shrink-0 hover:scale-105 transition-transform shadow-md"
           >
             <div className="text-base font-medium text-gray-800">
               {timeEpochToDayReturn(day.timeEpoch)}
             </div>
             <div className="flex mt-4 gap-5">
-              <div className="text-4xl">{day.tempmin}° / {day.tempmax}°</div>
-              <div className="text-4xl"> {(cloudCoverReturn(day.cloudcover, day.precip))?.slice(0, 2)}</div>
+              <div className="text-4xl whitespace-nowrap">
+                {day.tempmin}° / {day.tempmax}°
+              </div>
+              <div className="text-4xl">
+                {" "}
+                {cloudCoverReturn(day.cloudcover, day.precip)?.slice(0, 2)}
+              </div>
             </div>
           </div>
         );
